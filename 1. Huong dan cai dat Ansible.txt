@@ -1,0 +1,15 @@
+Mục đích: cài đặt Ansible trên nền tảng Centos 8
+1) Cập nhật repo
+dnf -y install epel-release
+
+2) Cài đặt Ansible
+dnf install -y ansible
+
+3) Kiểm tra version đã cài đặt
+ansible --version
+
+4) Tạo SSH-key
+ssh-keygen
+
+5) Chia sẻ SSH-keygen tới các máy chủ khác
+ssh-copy-id root@ip
