@@ -1,0 +1,16 @@
+Mục đích: Hiểu được các Ad-Hoc của Ansible
+
+Ví dụ: ansible <Group/Server Name> -m <module> -a <arguments> -u <user name> --become
+		-k (ask password) -> hỏi mật khẩu của file yml khi tiến hành thực thi
+		-T 'TIMEOUT' -> thời gian chờ tối thiểu của lệnh
+		-a 'MODULE_ARGS' -> nội dung lệnh sẽ thực thi trên host
+		-b (become) -> tùy chọn chạy lệnh với quyền supper admin trên host
+		-i (inventory file) -> tùy chọn nơi lưu trữ thông tin host
+		-m MODULE_ARGS -> tùy chọn thông tin về module sẽ sử dụng
+		--ask-vault-pass -> tùy chọn nếu file yml bị khóa bởi chức năng vault
+		
+Ví dụ: 
+ansible -m ping -i /etc/ansible/hosts
+ansible -m shell -a "ip address" webserver --ask-vault-pass
+ansible -m copy -a "src=ansible.cfg dest=/tmp/ansible.cfg" git --ask-vault-pass
+ansible -m dnf -a "name=wget state=latest" git --ask-vault-pass
