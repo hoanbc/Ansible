@@ -1,0 +1,40 @@
+Mục đích: Viết một file để thực thi một hoặc nhiều công việc một lúc với các host
+
+- Sử dụng vi để tạo file .yml
+- Tuyệt đối không được sử dụng phím tab thay cho việc cách dòng
+- Mỗi trường name chỉ tương ứng được với một task
+
+Ví dụ: ping-test.yml
+---
+- name: Ping to servers
+  hosts: servers
+  tasks:
+    - name: Test ping
+      ping:
+...
+
+Ví dụ: default-centos.yml
+---
+- name: Config default for  CentOS
+  hosts: gitlab
+  roles:
+  - default-centos
+...
+
+
+Ví dụ: install-httpd.yml
+---
+-name: Install httpd on hosts
+  dnf:
+    name: httpd
+	state: latest
+...
+
+Ví dụ: install-basic.yml
+---
+- name: Install basic package
+  dnf: name="{{ item }}" state=present
+  with_items:
+    - wget
+	- mlocate
+	- net-tools
