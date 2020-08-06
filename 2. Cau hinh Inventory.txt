@@ -1,0 +1,27 @@
+Mục đích: Tạo nơi lưu trữ thông tin kết nối tới các máy chủ
+
+B1) Cấu hình file hosts
+vi /etc/ansible/hosts
+
+[web-servers]
+host1 ansible_host=172.17.0.2 ansible_user=root ansible_password=123@123a ansible_port=22	#Sử dụng thông tin đăng nhập để xác thực
+host2 ansible_host=172.17.0.3 ansible_ssh_private_key_file=/ssh/host.pem	#Sử dụng SSH key để xác thực
+
+[database-servers]
+host4 ansible_host=172.18.1.4
+host5-6 ansible_host=172.18.1.[5:6]		#Khai báo patterns nếu các host có cùng lớp mạng
+
+###Nhóm các cụm server vào một nhóm
+[servers:children]
+web-servers
+database-servers
+
+###Khai báo các biến chung của nhóm
+[servers:vars]
+ansible_user=root
+ansible_password=123@123a
+ansible_port=22
+
+
+B2) Chạy test file host bằng lệnh ping
+ansible -i /etc/ansible/hosts -m ping server
