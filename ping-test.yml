@@ -3,8 +3,7 @@
   hosts: all
   become: yes
   tasks:
-    - name: Install apache mod_php package.
-      package:
+    - name: Install httpd on hosts
+      yum:
         name: "httpd"
-        state: present
-      notify: restart httpd
+        state: latest
