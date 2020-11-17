@@ -1,6 +1,10 @@
 ---
-- name: Ping to servers
+- name: Configure all servers.
+  hosts: all
+  become: yes
   tasks:
-    - name: Test ping
-      ping:
-...
+    - name: Install apache mod_php package.
+      package:
+        name: "httpd"
+        state: present
+      notify: restart httpd
