@@ -1,0 +1,6 @@
+---
+- name: Ping to servers
+  tasks:
+    - name: Test ping
+      ping:
+...
