@@ -1,6 +1,6 @@
 ---
 - name: Hardening for CentOS
-  hosts: centos-os
+  hosts: testgroup
   become: true
   become_method: sudo
   become_user: root
