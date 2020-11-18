@@ -60,12 +60,11 @@
           - rsyslog
 
     - name: Tao Banner cho dich vu SSH
-      lineinfile: 
-        create: true
-        line: "{{ item }}"
-        path: /etc/ssh/citigo-banner
-        with_items: 
-          - WARNING LOGIN
-          - Welcome to CITIGO SOFTWARE JOINT STOCK COMPANY
-          - All connections are monitored and recorded
-          - Disconnect IMMEDIATELY if you are not an authorized user     
+      lineinfile: line="{{ item }}" create=true path=/etc/ssh/citigo-banner
+      with_items: 
+          -  /-----------------------------------------------------------/
+          -  /                 *** WARNING LOGIN***                      /
+          -  / Welcome to CITIGO SOFTWARE JOINT STOCK COMPANY            /
+          -  / All connections are monitored and recorded                /
+          -  / Disconnect IMMEDIATELY if you are not an authorized user! /
+          -  /-----------------------------------------------------------/
