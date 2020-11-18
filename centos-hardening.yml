@@ -1,0 +1,67 @@
+---
+- name: Hardening for CentOS
+  hosts: centos-os
+  become: true
+  become_method: sudo
+  become_user: root
+  tasks:
+    - name: Cai dat nhung dich vu can thiet
+      yum: name="{{ item }}" state=present
+      with_items:
+          - epel-release
+          - openssh-server
+          - firewalld
+          - fail2ban
+          - audit
+          - rsyslog
+          - vim
+          - bind-utils
+          - wget
+          - authconfig
+          - tmux
+          - htop
+
+    - name: Go cai dat nhung dich vu khong can thiet
+      yum: name="{{ item }}" state=absent
+      with_items:
+          - ypserv
+          - ypbind
+          - rsh-server
+          - rsh
+          - talk-server
+          - talk
+          - tftp-server
+          - tftp
+          - telnet-server
+          - xinetd
+          - rsyncd
+          - xorg-x11
+          - avahi-daemon
+          - dhcpd
+          - nfs-server
+          - nfs 
+          - vsftpd
+          - dovecot
+          - samba
+          - squid
+          - bind
+          - net-snmp
+
+    - name: Khoi dong nhung dich vu can thiet
+      service: name="{{ item }}" state=started enabled=yes
+      with_items:
+          - sshd
+          - firewalld
+          - fail2ban
+          - rsyslog
+
+    - name: Tao Banner cho dich vu SSH
+      copy:
+      dest: "/etc/ssh/citigo-banner"
+      content:
+            /-----------------------------------------------------------\
+            |                 *** WARNING LOGIN***                      |
+            | Welcome to CITIGO SOFTWARE JOINT STOCK COMPANY            |
+            | All connections are monitored and recorded                |
+            | Disconnect IMMEDIATELY if you are not an authorized user! |
+            \-----------------------------------------------------------/
