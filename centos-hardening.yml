@@ -52,14 +52,12 @@
         state: absent
 
     - name: Khoi dong nhung dich vu can thiet
-      service:
-        name: 
+      service: name="{{ item }}" state=started enabled=yes
+      with_items:
           - sshd
           - firewalld
           - fail2ban
           - rsyslog
-        state: started
-        enabled: yes
 
     - name: Tao Banner cho dich vu SSH
       copy:
