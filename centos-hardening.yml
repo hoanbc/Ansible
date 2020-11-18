@@ -5,6 +5,9 @@
   become_method: sudo
   become_user: root
   tasks:
+    - name: Cai dat repo
+      yum: name=epel-release state=present
+
     - name: Cai dat nhung dich vu can thiet
       yum: name="{{ item }}" state=present
       with_items:
