@@ -11,7 +11,6 @@
     - name: Cai dat nhung dich vu can thiet
       yum: name="{{ item }}" state=present
       with_items:
-          - epel-release
           - openssh-server
           - firewalld
           - fail2ban
@@ -57,13 +56,3 @@
           - firewalld
           - fail2ban
           - rsyslog
-
-    - name: Tao Banner cho dich vu SSH
-      command: cat > /etc/ssh/citigo-banner << 'EOF'
-            /-----------------------------------------------------------\
-            |                 *** WARNING LOGIN***                      |
-            | Welcome to CITIGO SOFTWARE JOINT STOCK COMPANY            |
-            | All connections are monitored and recorded                |
-            | Disconnect IMMEDIATELY if you are not an authorized user! |
-            \-----------------------------------------------------------/
-        EOF
