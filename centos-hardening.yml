@@ -56,12 +56,11 @@
           - rsyslog
 
     - name: Tao Banner cho dich vu SSH
-      copy:
-      dest: "/etc/ssh/citigo-banner"
-      content:
+      command: cat > /etc/ssh/citigo-banner << 'EOF'
             /-----------------------------------------------------------\
             |                 *** WARNING LOGIN***                      |
             | Welcome to CITIGO SOFTWARE JOINT STOCK COMPANY            |
             | All connections are monitored and recorded                |
             | Disconnect IMMEDIATELY if you are not an authorized user! |
             \-----------------------------------------------------------/
+        EOF
