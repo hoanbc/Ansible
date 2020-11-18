@@ -24,10 +24,50 @@
           - htop
         state: present
 
+    - name: Go cai dat nhung dich vu khong can thiet
+      yum:
+        name:
+          - ypserv
+          - ypbind
+          - rsh-server
+          - rsh
+          - talk-server
+          - talk
+          - tftp-server
+          - tftp
+          - telnet-server
+          - xinetd
+          - rsyncd
+          - xorg-x11
+          - avahi-daemon
+          - dhcpd
+          - nfs-server
+          - nfs 
+          - vsftpd
+          - dovecot
+          - samba
+          - squid
+          - bind
+          - net-snmp
+        state: absent
+
     - name: Khoi dong nhung dich vu can thiet
-      service: name="{{ item }}" state=started enabled=yes
-      with_items:
+      service:
+        name: 
           - sshd
           - firewalld
           - fail2ban
           - rsyslog
+        state: started
+        enabled: yes
+
+    - name: Tao Banner cho dich vu SSH
+      copy:
+        content:
+            /-----------------------------------------------------------\
+            |                 *** WARNING LOGIN***                      |
+            | Welcome to CITIGO SOFTWARE JOINT STOCK COMPANY            |
+            | All connections are monitored and recorded                |
+            | Disconnect IMMEDIATELY if you are not an authorized user! |
+            \-----------------------------------------------------------/
+        dest: "/etc/ssh/citigo-banner"
