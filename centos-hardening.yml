@@ -9,45 +9,10 @@
       yum: name=epel-release state=present
 
     - name: Cai dat nhung dich vu can thiet
-      yum: name="{{ item }}" state=present
-      with_items:
-          - openssh-server
-          - firewalld
-          - fail2ban
-          - audit
-          - rsyslog
-          - vim
-          - bind-utils
-          - wget
-          - authconfig
-          - tmux
-          - htop
+      yum: name="['openssh-server', 'firewalld', 'fail2ban', 'audit', 'rsyslog', 'vim', 'bind-utils', 'wget', 'authconfig', 'tmux', 'htop']" state=present
 
     - name: Go cai dat nhung dich vu khong can thiet
-      yum: name="{{ item }}" state=absent
-      with_items:
-          - ypserv
-          - ypbind
-          - rsh-server
-          - rsh
-          - talk-server
-          - talk
-          - tftp-server
-          - tftp
-          - telnet-server
-          - xinetd
-          - rsyncd
-          - xorg-x11
-          - avahi-daemon
-          - dhcpd
-          - nfs-server
-          - nfs 
-          - vsftpd
-          - dovecot
-          - samba
-          - squid
-          - bind
-          - net-snmp
+      yum: name="['ypserv', 'ypbind', 'rsh-server', 'rsh', 'talk-server', 'talk', 'tftp-server', 'tftp', 'telnet-server', 'xinetd', 'rsyncd', 'xorg-x11', 'avahi-daemon', 'dhcpd', 'nfs-server', 'nfs', 'vsftpd', 'dovecot', 'samba', 'squid', 'bind', 'net-snmp']" state=absent
 
     - name: Khoi dong nhung dich vu can thiet
       service: name="{{ item }}" state=started enabled=yes
