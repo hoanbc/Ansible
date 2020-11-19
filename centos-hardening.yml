@@ -145,7 +145,7 @@
     - name: Cau hinh dich vu rsyslog tren bashrc
       lineinfile: line="{{ item }}" create=true path=/etc/fail2ban/jail.local
       with_items:
-          - [sshd]
+          - '[sshd]'
           - enabled  = true
           - filter   = sshd
           - action   = iptables[name=SSH, port=ssh, protocol=tcp]
@@ -188,3 +188,83 @@
       with_items:
           - NETWORKING_IPV6=no
           - IPV6INIT=no
+
+    - name: Thay doi cau hinh network
+      shell: "{{ item }}"
+      with_items:
+          - sysctl -w net.ipv4.ip_forward=0
+          - sysctl -w net.ipv4.conf.all.send_redirects=0
+          - sysctl -w net.ipv4.conf.default.send_redirects=0
+          - sysctl -w net.ipv4.conf.all.accept_source_route=0
+          - sysctl -w net.ipv4.conf.default.accept_source_route=0
+          - sysctl -w net.ipv4.conf.all.accept_redirects=0
+          - sysctl -w net.ipv4.conf.default.accept_redirects=0
+          - sysctl -w net.ipv4.conf.all.secure_redirects=0
+          - sysctl -w net.ipv4.conf.default.secure_redirects=0
+          - sysctl -w net.ipv4.conf.all.log_martians=1
+          - sysctl -w net.ipv4.conf.default.log_martians=1
+          - sysctl -w net.ipv4.route.flush=1
+          - sysctl -w net.ipv4.icmp_echo_ignore_broadcasts=1
+          - sysctl -w net.ipv4.icmp_ignore_bogus_error_responses=1
+          - sysctl -w net.ipv4.conf.all.rp_filter=1
+          - sysctl -w net.ipv4.conf.default.rp_filter=1
+          - sysctl -w net.ipv4.tcp_syncookies=1
+          - sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          - sysctl -w net.ipv6.conf.default.disable_ipv6=1
+          - sysctl -w net.ipv6.conf.all.accept_ra=0
+          - sysctl -w net.ipv6.conf.default.accept_ra=0
+          - sysctl -w net.ipv6.conf.all.accept_redirects=0
+          - sysctl -w net.ipv6.conf.default.accept_redirects=0
+
+    - name: Thay doi chinh sach mat khau
+      shell: "{{ item }}"
+      with_items:
+          - authconfig --passalgo=sha512 --update
+          - authconfig --passminlen=12 --update
+          - authconfig --passminclass=1 --update
+          - authconfig --passmaxrepeat=3 --update
+          - authconfig --enablereqlower --update
+          - authconfig --enablerequpper --update
+          - authconfig --enablereqdigit --update
+          - authconfig --enablereqother --update
+
+    - name: Tao script cai day chrony
+      lineinfile: line="{{ item }}" create=true path=/tmp/installchrony.sh mode=0777
+      with_items:
+          - hostname | grep -o vm |
+          - while read x ; do
+          - if [ $x == vm ] ;
+          - then
+          - echo "Day la Virtual Machine can phai cai chrony"
+          - yum -y install chrony
+          - systemctl enable chronyd
+          - systemctl restart chronyd
+          - sed -i 's/server 0.centos.pool.ntp.org iburst/server time.citigo.com.vn iburst/g' /etc/chrony.conf
+          - else
+          - echo "Day la Container khong can phai cai chrony"
+          - fi
+          - done
+
+    - name: Cau hinh thoi gian tren may chu
+      shell: "{{ item }}"
+      with_items:
+          - sudo rm -rf /etc/localtime
+          - sudo ln -s /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime
+          - sudo /bin/sh /tmp/installchrony.sh
+
+    - name: Cau hinh phan quyen tep tin
+      shell: "{{ item }}"
+      with_items:
+          - sudo chown root:root /etc/anacrontab
+          - sudo chmod og-rwx /etc/anacrontab
+          - sudo chown root:root /etc/cron*
+          - sudo chmod og-rwx /etc/cron*
+          - sudo rm -rf /etc/cron.deny
+          - sudo chmod 644 /etc/passwd
+          - sudo chmod 000 /etc/shadow
+          - sudo chmod 000 /etc/gshadow
+          - sudo chmod 644 /etc/group
+          - sudo chown root:root /etc/passwd
+          - sudo chown root:root /etc/shadow
+          - sudo chown root:root /etc/gshadow
+          - sudo chown root:root /etc/group
