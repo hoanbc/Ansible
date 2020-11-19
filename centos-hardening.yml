@@ -68,3 +68,57 @@
           - /         All connections are monitored and recorded            /
           - /   Disconnect IMMEDIATELY if you are not an authorized user!   /
           - /+-------------------------------------------------------------+/
+          
+    - name: Thay doi cau hinh dich vu SSH
+      command: echo -n " " > /etc/ssh/sshd_config
+      lineinfile: line="{{ item }}" create=true path=/etc/ssh/sshd_config
+      with_items:
+          - # Version and Port
+          - Protocol 2
+          - Port 22
+          - # Allow use private key
+          - HostKey /etc/ssh/ssh_host_rsa_key
+          - HostKey /etc/ssh/ssh_host_ecdsa_key
+          - HostKey /etc/ssh/ssh_host_ed25519_key
+          - # Logging
+          - SyslogFacility AUTHPRIV
+          - LogLevel VERBOSE
+          - # Authentication:
+          - ClientAliveInterval 600
+          - ClientAliveCountMax 0
+          - LoginGraceTime 30s
+          - PermitRootLogin no
+          - MaxAuthTries 3
+          - MaxSessions 2
+          - PubkeyAuthentication yes
+          - AuthorizedKeysFile	.ssh/authorized_keys
+          - IgnoreRhosts yes
+          - HostbasedAuthentication no
+          - PermitEmptyPasswords no
+          - PermitUserEnvironment no
+          - PasswordAuthentication yes
+          - ChallengeResponseAuthentication no
+          - UseDNS no
+          - Ciphers "aes128-ctr,aes192-ctr,aes256-ctr"
+          - # GSSAPI options
+          - GSSAPIAuthentication yes
+          - GSSAPICleanupCredentials no
+          - # Config PAM
+          - UsePAM yes
+          - # Enable X11
+          - X11Forwarding yes
+          - # Banner BOS Securities
+          - Banner /etc/ssh/citigo-banner
+          - # Accept locale-related environment variables
+          - AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+          - AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+          - AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+          - AcceptEnv XMODIFIERS
+          - # Default subsystems
+          - Subsystem	sftp	/usr/libexec/openssh/sftp-server
+
+    - name: Thay doi quyen cua tep tin dich vu ssh
+      file: path=/etc/ssh/sshd_config owner=root group=root mode='0600'
+
+    - name: Khoi dong lai dich vu ssh
+      service: name="sshd" state=started enabled=yes
