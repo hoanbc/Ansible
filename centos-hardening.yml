@@ -9,7 +9,7 @@
       yum: name=epel-release state=present
 
     - name: Cai dat nhung dich vu can thiet
-      yum: 
+      yum:
         name:
           - openssh-server
           - firewalld
@@ -42,7 +42,7 @@
           - avahi-daemon
           - dhcpd
           - nfs-server
-          - nfs 
+          - nfs
           - vsftpd
           - dovecot
           - samba
@@ -61,29 +61,27 @@
 
     - name: Tao Banner cho dich vu SSH
       lineinfile: line="{{ item }}" create=true path=/etc/ssh/citigo-banner
-      with_items: 
+      with_items:
           - /---------------------------------------------------------------/
           - /                     *** WARNING LOGIN***                      /
           - /        Welcome to CITIGO SOFTWARE JOINT STOCK COMPANY         /
           - /         All connections are monitored and recorded            /
           - /   Disconnect IMMEDIATELY if you are not an authorized user!   /
           - /+-------------------------------------------------------------+/
-          
+
     - name: Thay doi cau hinh dich vu SSH
-      command: echo -n " " > /etc/ssh/sshd_config
+      shell: echo -n " " > /etc/ssh/sshd_config
+
+    - name: Thay doi cau hinh SSH
       lineinfile: line="{{ item }}" create=true path=/etc/ssh/sshd_config
       with_items:
-          - # Version and Port
           - Protocol 2
           - Port 22
-          - # Allow use private key
           - HostKey /etc/ssh/ssh_host_rsa_key
           - HostKey /etc/ssh/ssh_host_ecdsa_key
           - HostKey /etc/ssh/ssh_host_ed25519_key
-          - # Logging
           - SyslogFacility AUTHPRIV
           - LogLevel VERBOSE
-          - # Authentication:
           - ClientAliveInterval 600
           - ClientAliveCountMax 0
           - LoginGraceTime 30s
@@ -91,7 +89,7 @@
           - MaxAuthTries 3
           - MaxSessions 2
           - PubkeyAuthentication yes
-          - AuthorizedKeysFile	.ssh/authorized_keys
+          - AuthorizedKeysFile  .ssh/authorized_keys
           - IgnoreRhosts yes
           - HostbasedAuthentication no
           - PermitEmptyPasswords no
@@ -100,25 +98,93 @@
           - ChallengeResponseAuthentication no
           - UseDNS no
           - Ciphers "aes128-ctr,aes192-ctr,aes256-ctr"
-          - # GSSAPI options
           - GSSAPIAuthentication yes
           - GSSAPICleanupCredentials no
-          - # Config PAM
           - UsePAM yes
-          - # Enable X11
           - X11Forwarding yes
-          - # Banner BOS Securities
           - Banner /etc/ssh/citigo-banner
-          - # Accept locale-related environment variables
           - AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
           - AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
           - AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
           - AcceptEnv XMODIFIERS
-          - # Default subsystems
-          - Subsystem	sftp	/usr/libexec/openssh/sftp-server
+          - Subsystem   sftp    /usr/libexec/openssh/sftp-server
 
     - name: Thay doi quyen cua tep tin dich vu ssh
       file: path=/etc/ssh/sshd_config owner=root group=root mode='0600'
 
     - name: Khoi dong lai dich vu ssh
-      service: name="sshd" state=started enabled=yes
+      service: name="sshd" state=restarted
+
+    - name: Chinh sua tep tin cau hinh dich vu Firewalld
+      lineinfile: path=/etc/firewalld/firewalld.conf regexp='^AllowZoneDrifting=yes' line=AllowZoneDrifting=no
+
+    - name: Cau hinh dich vu Firewalld
+      shell: "{{ item }}"
+      with_items:
+          - firewall-cmd --remove-service=ssh --permanent
+          - firewall-cmd --remove-service=dhcpv6-client --permanent
+          - firewall-cmd --permanent --add-rich-rule='rule family='ipv4' source address='192.168.17.11/32' service name='ssh' accept'
+          - firewall-cmd --permanent --add-rich-rule='rule family='ipv4' source address='192.168.54.11/32' service name='ssh' accept'
+          - firewall-cmd --reload
+
+    - name: Cau hinh dich vu rsyslog tren rsyslog.conf
+      lineinfile: line="{{ item }}" create=true path=/etc/rsyslog.conf
+      with_items:
+          - '# Save command execute on server'
+          - local2.info   /var/log/cli.log
+
+    - name: Cau hinh dich vu rsyslog tren bashrc
+      lineinfile: line="{{ item }}" create=true path=/etc/bashrc
+      with_items:
+          - '# Save command execute on server'
+          - export PROMPT_COMMAND='history -a >(logger -p local2.info -t "$USER[$PWD] $SSH_CONNECTION")'
+
+    - name: Khoi dong lai dich vu rsyslog
+      service: name="rsyslog" state=restarted
+
+    - name: Cau hinh dich vu rsyslog tren bashrc
+      lineinfile: line="{{ item }}" create=true path=/etc/fail2ban/jail.local
+      with_items:
+          - [sshd]
+          - enabled  = true
+          - filter   = sshd
+          - action   = iptables[name=SSH, port=ssh, protocol=tcp]
+          - logpath  = /var/log/secure
+          - maxretry = 3
+          - bantime = 300
+
+    - name: Khoi dong lai dich vu fail2ban
+      service: name="fail2ban" state=restarted
+
+    - name: Thay doi cau hinh netwrok tren tin sysctl
+      lineinfile: line="{{ item }}" create=true path=/etc/sysctl.conf
+      with_items:
+          - net.ipv4.ip_forward=0
+          - net.ipv4.conf.all.send_redirects=0
+          - net.ipv4.conf.default.send_redirects=0
+          - net.ipv4.conf.all.accept_source_route=0
+          - net.ipv4.conf.default.accept_source_route=0
+          - net.ipv4.conf.all.accept_redirects=0
+          - net.ipv4.conf.default.accept_redirects=0
+          - net.ipv4.conf.all.secure_redirects=0
+          - net.ipv4.conf.default.secure_redirects=0
+          - net.ipv4.conf.all.log_martians=1
+          - net.ipv4.conf.default.log_martians=1
+          - net.ipv4.route.flush=1
+          - net.ipv4.icmp_echo_ignore_broadcasts=1
+          - net.ipv4.icmp_ignore_bogus_error_responses=1
+          - net.ipv4.conf.all.rp_filter=1
+          - net.ipv4.conf.default.rp_filter=1
+          - net.ipv4.tcp_syncookies=1
+          - net.ipv6.conf.all.accept_ra=0
+          - net.ipv6.conf.default.accept_ra=0
+          - net.ipv6.conf.all.accept_redirects=0
+          - net.ipv6.conf.default.accept_redirects=0
+          - net.ipv6.conf.all.disable_ipv6=1
+          - net.ipv6.conf.default.disable_ipv6=1
+
+    - name: Thay doi cau hinh netwrok tat IPv6
+      lineinfile: line="{{ item }}" create=true path=/etc/sysconfig/network
+      with_items:
+          - NETWORKING_IPV6=no
+          - IPV6INIT=no
