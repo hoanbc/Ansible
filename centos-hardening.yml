@@ -1,5 +1,5 @@
 ---
-- name: Hardening for CentOS
+- name: Cau hinh dong bo he dieu hanh CentOS
   hosts: all
   become: true
   become_method: sudo
@@ -8,6 +8,17 @@
     - name: Cai dat repo
       yum: name=epel-release state=present
 
+    - name: Cai dat repo cho telegraf
+      shell: |
+             cat > /etc/yum.repos.d/influxdb.repo << 'EOF'
+             [influxdb]
+             name = InfluxDB Repository - RHEL \$releasever
+             baseurl = https://repos.influxdata.com/rhel/$releasever/$basearch/stable
+             enabled = 1
+             gpgcheck = 1
+             gpgkey = https://repos.influxdata.com/influxdb.key
+             EOF
+        
     - name: Cai dat nhung dich vu can thiet
       yum:
         name:
@@ -22,6 +33,7 @@
           - authconfig
           - tmux
           - htop
+          - telegraf 
         state: present
 
     - name: Go cai dat nhung dich vu khong can thiet
@@ -59,81 +71,124 @@
           - fail2ban
           - rsyslog
 
-    - name: Tao Banner cho dich vu SSH
-      lineinfile: line="{{ item }}" create=true path=/etc/ssh/citigo-banner
-      with_items:
-          - /---------------------------------------------------------------/
-          - /                     *** WARNING LOGIN***                      /
-          - /        Welcome to CITIGO SOFTWARE JOINT STOCK COMPANY         /
-          - /         All connections are monitored and recorded            /
-          - /   Disconnect IMMEDIATELY if you are not an authorized user!   /
-          - /+-------------------------------------------------------------+/
+    - name: Tao tep tin citigo-banner cho dich vu SSH
+      shell: |
+             cat > /etc/ssh/citigo-banner << 'EOF'
+               /---------------------------------------------------------------\
+               |                     *** WARNING LOGIN***                      |
+               |        Welcome to CITIGO SOFTWARE JOINT STOCK COMPANY         |
+               |         All connections are monitored and recorded            |
+               |   Disconnect IMMEDIATELY if you are not an authorized user!   |
+               \---------------------------------------------------------------/
+             EOF
 
-    - name: Thay doi cau hinh dich vu SSH
-      shell: echo -n " " > /etc/ssh/sshd_config
+    - name: Thay doi cau hinh tep tin sshd_config cho dich vu SSH
+      shell: |
+             cat > /etc/ssh/sshd_config << 'EOF'
+             # Version and Port
+               Protocol 2
+               Port 22
+             # Allow use private key
+               HostKey /etc/ssh/ssh_host_rsa_key
+               HostKey /etc/ssh/ssh_host_ecdsa_key
+               HostKey /etc/ssh/ssh_host_ed25519_key
+             # Logging
+               SyslogFacility AUTHPRIV
+               LogLevel VERBOSE
+             # Authentication:
+               ClientAliveInterval 600
+               ClientAliveCountMax 0
+               LoginGraceTime 30s
+               PermitRootLogin no
+               MaxAuthTries 3
+               MaxSessions 2
+               PubkeyAuthentication yes
+               AuthorizedKeysFile        .ssh/authorized_keys
+               IgnoreRhosts yes
+               HostbasedAuthentication no
+               PermitEmptyPasswords no
+               PermitUserEnvironment no
+               PasswordAuthentication yes
+               ChallengeResponseAuthentication no
+               UseDNS no
+               Ciphers "aes128-ctr,aes192-ctr,aes256-ctr"
+             # GSSAPI options
+               GSSAPIAuthentication yes
+               GSSAPICleanupCredentials no
+             # Config PAM
+               UsePAM yes
+             # Enable X11
+               X11Forwarding yes
+             # Banner CITIGO SOFTWARE 
+               Banner /etc/ssh/citigo-banner
+             # Accept locale-related environment variables
+               AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+               AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+               AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+               AcceptEnv XMODIFIERS
+             # Default subsystems
+               Subsystem sftp    /usr/libexec/openssh/sftp-server
+             EOF
 
-    - name: Thay doi cau hinh SSH
-      lineinfile: line="{{ item }}" create=true path=/etc/ssh/sshd_config
-      with_items:
-          - Protocol 2
-          - Port 22
-          - HostKey /etc/ssh/ssh_host_rsa_key
-          - HostKey /etc/ssh/ssh_host_ecdsa_key
-          - HostKey /etc/ssh/ssh_host_ed25519_key
-          - SyslogFacility AUTHPRIV
-          - LogLevel VERBOSE
-          - ClientAliveInterval 600
-          - ClientAliveCountMax 0
-          - LoginGraceTime 30s
-          - PermitRootLogin no
-          - MaxAuthTries 3
-          - MaxSessions 2
-          - PubkeyAuthentication yes
-          - AuthorizedKeysFile  .ssh/authorized_keys
-          - IgnoreRhosts yes
-          - HostbasedAuthentication no
-          - PermitEmptyPasswords no
-          - PermitUserEnvironment no
-          - PasswordAuthentication yes
-          - ChallengeResponseAuthentication no
-          - UseDNS no
-          - Ciphers "aes128-ctr,aes192-ctr,aes256-ctr"
-          - GSSAPIAuthentication yes
-          - GSSAPICleanupCredentials no
-          - UsePAM yes
-          - X11Forwarding yes
-          - Banner /etc/ssh/citigo-banner
-          - AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
-          - AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
-          - AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
-          - AcceptEnv XMODIFIERS
-          - Subsystem   sftp    /usr/libexec/openssh/sftp-server
-
-    - name: Thay doi quyen cua tep tin dich vu ssh
+    - name: Thay doi quyen truy cap file sshd_config cua dich vu ssh
       file: path=/etc/ssh/sshd_config owner=root group=root mode='0600'
 
-    - name: Khoi dong lai dich vu ssh
+    - name: Khoi dong lai dich vu sshd
       service: name="sshd" state=restarted
 
-    - name: Chinh sua tep tin cau hinh dich vu Firewalld
+    - name: Chinh sua file filewalld.conf cua dich vu Firewalld
       lineinfile: path=/etc/firewalld/firewalld.conf regexp='^AllowZoneDrifting=yes' line=AllowZoneDrifting=no
 
-    - name: Cau hinh dich vu Firewalld
+    - name: Them rule dich vu prometheus-agent cho firewalld
+      shell: |
+             cat > /usr/lib/firewalld/services/prometheus-agent.xml << 'EOF'
+             <?xml version="1.0" encoding="utf-8"?>
+             <service>
+                 <short>prometheus-agent</short>
+                 <description>Allow request via prometheus-server</description>
+                 <port protocol="tcp" port="9100"/>
+                 <port protocol="tcp" port="9104"/>
+                 <port protocol="tcp" port="9179"/>
+                 <port protocol="tcp" port="9190"/>
+             </service>
+             EOF
+
+    - name: Dung lai mot chut thoi
+      pause:
+        seconds: 3
+
+    - name: Mo va dong ket noi dich vu thong qua firewalld
       shell: "{{ item }}"
       with_items:
           - firewall-cmd --remove-service=ssh --permanent
           - firewall-cmd --remove-service=dhcpv6-client --permanent
+          - firewall-cmd --add-service=prometheus-agent --permanent
           - firewall-cmd --permanent --add-rich-rule='rule family='ipv4' source address='192.168.17.11/32' service name='ssh' accept'
           - firewall-cmd --permanent --add-rich-rule='rule family='ipv4' source address='192.168.54.11/32' service name='ssh' accept'
           - firewall-cmd --reload
 
-    - name: Cau hinh dich vu rsyslog tren rsyslog.conf
+    - name: Them rule chan ket noi ssh khi nhap mat khau sai cho dich vu fail2ban
+      shell: |
+              cat > /etc/fail2ban/jail.local << 'EOF'
+              [sshd]
+                enabled  = true
+                filter   = sshd
+                action   = iptables[name=SSH, port=ssh, protocol=tcp]
+                logpath  = /var/log/secure
+                maxretry = 3
+                bantime = 300
+              EOF
+
+    - name: Khoi dong lai dich vu fail2ban
+      service: name="fail2ban" state=restarted
+
+    - name: Chinh sua file rsyslog.conf cho dich vu Rsyslog
       lineinfile: line="{{ item }}" create=true path=/etc/rsyslog.conf
       with_items:
           - '# Save command execute on server'
           - local2.info   /var/log/cli.log
 
-    - name: Cau hinh dich vu rsyslog tren bashrc
+    - name: Chinh sua file bashrc cho dich vu Rsyslog
       lineinfile: line="{{ item }}" create=true path=/etc/bashrc
       with_items:
           - '# Save command execute on server'
@@ -141,55 +196,57 @@
 
     - name: Khoi dong lai dich vu rsyslog
       service: name="rsyslog" state=restarted
+      
+    - name: Chinh sua file telegraf.conf cho dich vu telegraf1
+      replace:
+        path: /etc/telegraf/telegraf.conf
+        regexp: 'hostname = ""'
+        replace: 'hostname = {{ ansible_hostname }}'
+        backup: yes
+      
+    - name: Chinh sua file telegraf.conf cho dich vu telegraf2
+      replace:
+        path: /etc/telegraf/telegraf.conf
+        regexp: '^(.*)The full HTTP or UDP URL(.*)'
+        replace: 'urls = ["http://monitoring.kvpos.com:8088"]\n  database = "telegraf"\n  username = "influx"\n  password = "GR4f4Nm0n1Torin9"'
 
-    - name: Cau hinh dich vu rsyslog tren bashrc
-      lineinfile: line="{{ item }}" create=true path=/etc/fail2ban/jail.local
-      with_items:
-          - '[sshd]'
-          - enabled  = true
-          - filter   = sshd
-          - action   = iptables[name=SSH, port=ssh, protocol=tcp]
-          - logpath  = /var/log/secure
-          - maxretry = 3
-          - bantime = 300
 
-    - name: Khoi dong lai dich vu fail2ban
-      service: name="fail2ban" state=restarted
+    - name: Chinh sua file sysctl.conf cho dich vu mang
+      shell: |
+              cat > /etc/sysctl.conf << 'EOF'
+                    net.ipv4.ip_forward=0
+                    net.ipv4.conf.all.send_redirects=0
+                    net.ipv4.conf.default.send_redirects=0
+                    net.ipv4.conf.all.accept_source_route=0
+                    net.ipv4.conf.default.accept_source_route=0
+                    net.ipv4.conf.all.accept_redirects=0
+                    net.ipv4.conf.default.accept_redirects=0
+                    net.ipv4.conf.all.secure_redirects=0
+                    net.ipv4.conf.default.secure_redirects=0
+                    net.ipv4.conf.all.log_martians=1
+                    net.ipv4.conf.default.log_martians=1
+                    net.ipv4.route.flush=1
+                    net.ipv4.icmp_echo_ignore_broadcasts=1
+                    net.ipv4.icmp_ignore_bogus_error_responses=1
+                    net.ipv4.conf.all.rp_filter=1
+                    net.ipv4.conf.default.rp_filter=1
+                    net.ipv4.tcp_syncookies=1
+                    net.ipv6.conf.all.accept_ra=0
+                    net.ipv6.conf.default.accept_ra=0
+                    net.ipv6.conf.all.accept_redirects=0
+                    net.ipv6.conf.default.accept_redirects=0
+                    net.ipv6.conf.all.disable_ipv6=1
+                    net.ipv6.conf.default.disable_ipv6=1
+              EOF
 
-    - name: Thay doi cau hinh netwrok tren tin sysctl
-      lineinfile: line="{{ item }}" create=true path=/etc/sysctl.conf
-      with_items:
-          - net.ipv4.ip_forward=0
-          - net.ipv4.conf.all.send_redirects=0
-          - net.ipv4.conf.default.send_redirects=0
-          - net.ipv4.conf.all.accept_source_route=0
-          - net.ipv4.conf.default.accept_source_route=0
-          - net.ipv4.conf.all.accept_redirects=0
-          - net.ipv4.conf.default.accept_redirects=0
-          - net.ipv4.conf.all.secure_redirects=0
-          - net.ipv4.conf.default.secure_redirects=0
-          - net.ipv4.conf.all.log_martians=1
-          - net.ipv4.conf.default.log_martians=1
-          - net.ipv4.route.flush=1
-          - net.ipv4.icmp_echo_ignore_broadcasts=1
-          - net.ipv4.icmp_ignore_bogus_error_responses=1
-          - net.ipv4.conf.all.rp_filter=1
-          - net.ipv4.conf.default.rp_filter=1
-          - net.ipv4.tcp_syncookies=1
-          - net.ipv6.conf.all.accept_ra=0
-          - net.ipv6.conf.default.accept_ra=0
-          - net.ipv6.conf.all.accept_redirects=0
-          - net.ipv6.conf.default.accept_redirects=0
-          - net.ipv6.conf.all.disable_ipv6=1
-          - net.ipv6.conf.default.disable_ipv6=1
+    - name: Chinh sua file network cho dich vu mang
+      shell: |
+              cat > /etc/sysconfig/network << 'EOF'
+                    NETWORKING_IPV6=no
+                    IPV6INIT=no
+              EOF
 
-    - name: Thay doi cau hinh netwrok tat IPv6
-      lineinfile: line="{{ item }}" create=true path=/etc/sysconfig/network
-      with_items:
-          - NETWORKING_IPV6=no
-          - IPV6INIT=no
-
-    - name: Thay doi cau hinh network
+    - name: Thay doi cau hinh network khong can reboot
       shell: "{{ item }}"
       with_items:
           - sysctl -w net.ipv4.ip_forward=0
@@ -216,7 +273,7 @@
           - sysctl -w net.ipv6.conf.all.accept_redirects=0
           - sysctl -w net.ipv6.conf.default.accept_redirects=0
 
-    - name: Thay doi chinh sach mat khau
+    - name: Thay doi chinh sach mat khau thong qua authconf
       shell: "{{ item }}"
       with_items:
           - authconfig --passalgo=sha512 --update
@@ -228,39 +285,67 @@
           - authconfig --enablereqdigit --update
           - authconfig --enablereqother --update
 
+    - name: Cau hinh file login.defs thay doi thoi gian het han mat khau
+      replace:
+        path: /etc/login.defs
+        regexp: '^PASS_MAX_DAYS.*99999'
+        replace: 'PASS_MAX_DAYS 180'
 
-    - name: Test
+    - name: Cau hinh file login.defs thay doi thoi gian canh bao het han mat khau
+      replace:
+        path: /etc/login.defs
+        regexp: '^PASS_WARN_AGE.*7'
+        replace: 'PASS_WARN_AGE 14'
+
+    - name: Cau hinh file login.defs thay doi thoi do dai cua mat khau
+      replace:
+        path: /etc/login.defs
+        regexp: '^PASS_MIN_LEN.*5'
+        replace: 'PASS_MIN_LEN 12'
+       
+    - name: Cau hinh file system-auth yeu cau Root su dung chinh sach mat khau
+      replace:
+        path: /etc/pam.d/system-auth
+        regexp: '^authtok_type='
+        replace: 'authtok_type= enforce_for_root'
+        
+    - name: Cau hinh file pwquality.conf yeu cau khong su dung cac chuoi ky tu gan nhau nhu 123 abc
+      replace:
+        path: /etc/security/pwquality.conf
+        regexp: '^# dictpath ='
+        replace: 'maxsequence = 3'
+
+    - name: Tao script cai dat chrony neu may chu la VM
       shell: |
-              cat > /tmp/sysctl.conf << 'EOF'
-              net.ipv4.ip_forward=0
+              cat > /tmp/installchrony.sh << 'EOF'
+                    hostname | grep -o vm |
+                    while read x ; do
+                    if [ $x == vm ] ;
+                    then
+                         echo "Day la Virtual Machine can phai cai chrony"
+                         yum -y install chrony
+                         systemctl enable chronyd
+                         systemctl restart chronyd
+                         sed -i 's/server 0.centos.pool.ntp.org iburst/server time.citigo.com.vn iburst/g' /etc/chrony.conf
+                         sed -i 's/pool 2.centos.pool.ntp.org iburst/server time.citigo.com.vn iburst/g' /etc/chrony.conf
+                         rm -rf /etc/localtime
+                         ln -s /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime
+                    else
+                         echo "Day la Container khong can phai cai chrony"
+                    fi
+                    done
               EOF
 
-    - name: Tao script cai day chrony
-      lineinfile: line="{{ item }}" create=true path=/tmp/installchrony.sh mode=0777
-      with_items:
-          - hostname | grep -o vm |
-          - while read x ; do
-          - if [ $x == vm ] ;
-          - then
-          - echo "Day la Virtual Machine can phai cai chrony"
-          - yum -y install chrony
-          - systemctl enable chronyd
-          - systemctl restart chronyd
-          - sed -i 's/server 0.centos.pool.ntp.org iburst/server time.citigo.com.vn iburst/g' /etc/chrony.conf
-          - sed -i 's/pool 2.centos.pool.ntp.org iburst/server time.citigo.com.vn iburst/g' /etc/chrony.conf
-          - else
-          - echo "Day la Container khong can phai cai chrony"
-          - fi
-          - done
-
-    - name: Cau hinh thoi gian tren may chu
+    - name: Cau hinh time zone va cai dat chrony
+      become: true
+      become_method: sudo
+      become_user: root
       shell: "{{ item }}"
       with_items:
-          - sudo rm -rf /etc/localtime
-          - sudo ln -s /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime
+          - sudo chmod +x /tmp/installchrony.sh
           - sudo /bin/sh /tmp/installchrony.sh
 
-    - name: Cau hinh core dump
+    - name: Cau hinh file limits.conf han che core dump
       lineinfile: path=/etc/security/limits.conf regexp='^# End of file' line='*    hard    core    0'
 
     - name: Cau hinh phan quyen tep tin
