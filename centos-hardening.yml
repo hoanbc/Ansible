@@ -228,6 +228,13 @@
           - authconfig --enablereqdigit --update
           - authconfig --enablereqother --update
 
+
+    - name: Test
+      shell: |
+              cat > /tmp/sysctl.conf << 'EOF'
+              net.ipv4.ip_forward=0
+              EOF
+
     - name: Tao script cai day chrony
       lineinfile: line="{{ item }}" create=true path=/tmp/installchrony.sh mode=0777
       with_items:
@@ -240,6 +247,7 @@
           - systemctl enable chronyd
           - systemctl restart chronyd
           - sed -i 's/server 0.centos.pool.ntp.org iburst/server time.citigo.com.vn iburst/g' /etc/chrony.conf
+          - sed -i 's/pool 2.centos.pool.ntp.org iburst/server time.citigo.com.vn iburst/g' /etc/chrony.conf
           - else
           - echo "Day la Container khong can phai cai chrony"
           - fi
@@ -251,6 +259,9 @@
           - sudo rm -rf /etc/localtime
           - sudo ln -s /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime
           - sudo /bin/sh /tmp/installchrony.sh
+
+    - name: Cau hinh core dump
+      lineinfile: path=/etc/security/limits.conf regexp='^# End of file' line='*    hard    core    0'
 
     - name: Cau hinh phan quyen tep tin
       shell: "{{ item }}"
