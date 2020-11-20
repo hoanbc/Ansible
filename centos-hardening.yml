@@ -208,8 +208,10 @@
       replace:
         path: /etc/telegraf/telegraf.conf
         regexp: '^(.*)The full HTTP or UDP URL(.*)'
-        replace: 'urls = ["http://monitoring.kvpos.com:8088"]\n  database = "telegraf"\n  username = "influx"\n  password = "GR4f4Nm0n1Torin9"'
+        replace: 'urls = ["http://m111onitoring.kvpos.com:8088"]\n  database = "telegraf"\n  username = "influx"\n  password = "GR4f4Nm0n1Torin9"'
 
+    - name: Khoi dong lai dich vu telegraf
+      service: name="telegraf" state=restarted enabled=yes
 
     - name: Chinh sua file sysctl.conf cho dich vu mang
       shell: |
