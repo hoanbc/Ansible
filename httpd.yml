@@ -1,9 +1,0 @@
----
-- name: Configure all servers.
-  hosts: all
-  become: yes
-  tasks:
-    - name: Install httpd on hosts
-      yum:
-        name: "httpd"
-        state: latest

@@ -1,0 +1,15 @@
+---
+- name: Configure all servers.
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure user bob is present
+      ansible.windows.win_user:
+        fullname: system1
+        name: system1
+        password: 123@123aA!@#
+        state: present
+        password_never_expires: True
+        groups:
+          - Remote Desktop Users
+          - Administrators
