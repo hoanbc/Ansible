@@ -1,0 +1,9 @@
+1) Cài đặt SSL
+-> Copy ssl vào thư mục /etc/tower và đổi tên giống như sau
+/etc/tower/tower.cert
+/etc/tower/tower.key 
+
+2) Chạy lệnh sau
+restorecon -v /etc/tower/tower.cert
+restorecon -v /etc/tower/tower.key
+systemctl restart nginx.service

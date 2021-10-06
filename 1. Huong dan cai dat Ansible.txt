@@ -1,3 +1,4 @@
+Chuẩn bị máy chủ 8GB RAM, ổ cứng 50GB, 2core
 Mục đích: cài đặt Ansible trên nền tảng Centos 8
 1) Cập nhật repo
 dnf -y install epel-release
@@ -13,3 +14,33 @@ ssh-keygen
 
 5) Chia sẻ SSH-keygen tới các máy chủ khác
 ssh-copy-id root@ip
+
+
+
+Mục đích: cài đặt Ansible trên nền tảng Redhat 8
+1) Cập nhật repo
+sudo subscription-manager repos --enable ansible-2.9-for-rhel-8-x86_64-rpms
+
+2) Cài đặt Ansible
+dnf install -y ansible
+
+3) Tải gói ansible tower
+wget https://releases.ansible.com/ansible-tower/setup/ansible-tower-setup-latest.tar.gz
+ tar xvzf ansible-tower-setup-latest.tar.gz
+ cd ansible-tower-setup-<tower_version>
+ 
+4) Sửa file inventory tại folder ansible-tower-setup-<tower_version>
+[tower]
+localhost ansible_connection=local
+
+[automationhub]
+
+[database]
+
+[all:vars]
+admin_password='123@123a'
+pg_password='123@123a'
+automationhub_pg_password='123@123a'
+
+5) Chạy script cài đặt
+sh setup.sh
