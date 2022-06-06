@@ -1,0 +1,53 @@
+LDAP Server URI: ldap://systemtest.local
+LDAP Bind Password
+LDAP Group Type: ActiveDirectoryGroupType
+LDAP Start TLS: Off
+LDAP Bind DN: CN=Administrator,CN=Users,DC=systemtest,DC=local
+LDAP Require Group: CN=bu1group,OU=BU1,OU=HBC,DC=systemtest,DC=local
+
+LDAP User Search
+[
+  "OU=HBC,DC=systemtest,DC=local",
+  "SCOPE_SUBTREE",
+  "(sAMAccountName=%(user)s)"
+]
+
+LDAP Group Search
+[
+  "OU=HBC,DC=systemtest,DC=local",
+  "SCOPE_SUBTREE",
+  "(objectClass=group)"
+]
+
+LDAP User Attribute Map
+{
+  "first_name": "givenName",
+  "last_name": "sn",
+  "email": "userPrincipalName"
+}
+
+LDAP User Flags By Group
+{
+  "is_superuser": [
+    "CN=bu1user1,OU=BU1,OU=HBC,DC=systemtest,DC=local"
+  ]
+}
+
+LDAP Organization Map
+{
+  "hbc": {
+    "admins": "OU=HBC,DC=systemtest,DC=local",
+    "remove_admins": false,
+    "remove_users": false,
+    "users": true
+  }
+}
+
+LDAP Team Map
+{
+  "infra": {
+    "users": "CN=bu1group,OU=BU1,OU=HBC,DC=systemtest,DC=local",
+    "organization": "hbc",
+    "remove": true
+  }
+}
