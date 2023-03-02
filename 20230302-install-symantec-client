@@ -1,0 +1,46 @@
+[devops@ansible ~]# cat /home/devops/playbook/linux-change-config/symantec/inventory 
+[inventory_prod]
+10.252.1.1
+
+[all:vars]
+ansible_user=ansuser
+ansible_ssh_private_key_file=/home/devops/.ssh/id_rsa_ansible
+
+[devops@ansible ~]# cat /home/devops/playbook/linux-change-config/symantec/install-symantec-rhel.yaml 
+---
+- hosts: inventory_prod
+  gather_facts: true
+  become: yes
+  become_user: root
+  tasks:
+  - name: Check symantec version
+    shell: /opt/Symantec/symantec_antivirus/sav info -p | awk '{print $6}'
+    register: version_status
+
+  - name: Copy file symantec
+    copy: 
+      src: /home/devops/playbook/linux-change-config/symantec/files
+      dest: /home/devops/symantec
+      mode: 0777
+      directory_mode: 0777
+      force: yes
+    when:
+      - version_status.stdout == "4815"
+      - ansible_os_family == "RedHat"
+    register: copy_status
+  
+  - name: Re-install symantec
+    shell: ./LinuxInstaller -- -h file:///home/devops/symantec/files/SAL/1.1/
+    args:    
+      chdir: /home/devops/symantec/files
+    when: copy_status.changed
+
+  - name: Remove file symantec
+    ansible.builtin.file:
+      path: /home/devops/symantec/
+      state: absent
+      
+[root@ansible ~]# cat /home/devops/playbook/linux-change-config/symantec/ssh-agent 
+eval "$(ssh-agent -s)"
+ssh-add /home/devops/.ssh/id_rsa
+
